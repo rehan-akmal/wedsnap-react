@@ -122,10 +122,11 @@ export default function AvailabilityPage() {
     notSet: (date: Date) => getAvailabilityStatus(date) === null,
   }
 
+  // Custom calendar modifier styles
   const modifiersStyles = {
-    available: { backgroundColor: "#dcfce7", color: "#166534" }, // Green for available
-    busy: { backgroundColor: "#fecaca", color: "#991b1b" }, // Red for busy
-    notSet: { backgroundColor: "#f3f4f6", color: "#6b7280" }, // Grey for not set
+    available: { backgroundColor: "#dcfce7", color: "#166534" },
+    busy: { backgroundColor: "#fecaca", color: "#991b1b" },
+    notSet: { backgroundColor: "#f3f4f6", color: "#6b7280" },
   }
 
   // Render loading state

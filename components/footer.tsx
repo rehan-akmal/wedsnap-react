@@ -12,13 +12,13 @@ export default function Footer() {
               Connecting photographers and videographers with clients across Pakistan.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-gray-600 hover:text-purple-600">
+              <a href="#" className="text-gray-600 hover:text-red-600">
                 <Facebook className="h-5 w-5" />
               </a>
-              <a href="#" className="text-gray-600 hover:text-purple-600">
+              <a href="#" className="text-gray-600 hover:text-red-600">
                 <Instagram className="h-5 w-5" />
               </a>
-              <a href="#" className="text-gray-600 hover:text-purple-600">
+              <a href="#" className="text-gray-600 hover:text-red-600">
                 <Twitter className="h-5 w-5" />
               </a>
             </div>
@@ -28,23 +28,13 @@ export default function Footer() {
             <h3 className="text-sm font-bold uppercase text-gray-500 mb-4">For Clients</h3>
             <ul className="space-y-3">
               <li>
-                <Link href="#" className="text-gray-600 hover:text-purple-600">
+                <Link href="#" className="text-gray-600 hover:text-red-600">
                   How It Works
                 </Link>
               </li>
               <li>
-                <Link href="/gigs" className="text-gray-600 hover:text-purple-600">
+                <Link href="/gigs" className="text-gray-600 hover:text-red-600">
                   Find a Photographer
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-gray-600 hover:text-purple-600">
-                  Reviews
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-gray-600 hover:text-purple-600">
-                  Trust & Safety
                 </Link>
               </li>
             </ul>
@@ -54,18 +44,8 @@ export default function Footer() {
             <h3 className="text-sm font-bold uppercase text-gray-500 mb-4">For Photographers</h3>
             <ul className="space-y-3">
               <li>
-                <Link href="/auth/signup" className="text-gray-600 hover:text-purple-600">
+                <Link href="/auth/signup" className="text-gray-600 hover:text-red-600">
                   Become a Seller
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-gray-600 hover:text-purple-600">
-                  Community Forum
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-gray-600 hover:text-purple-600">
-                  Success Stories
                 </Link>
               </li>
             </ul>
@@ -75,22 +55,22 @@ export default function Footer() {
             <h3 className="text-sm font-bold uppercase text-gray-500 mb-4">Support</h3>
             <ul className="space-y-3">
               <li>
-                <Link href="/help" className="text-gray-600 hover:text-purple-600">
+                <Link href="/help" className="text-gray-600 hover:text-red-600">
                   Help Center
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="text-gray-600 hover:text-purple-600">
+                <Link href="/contact" className="text-gray-600 hover:text-red-600">
                   Contact Us
                 </Link>
               </li>
               <li>
-                <Link href="/privacy" className="text-gray-600 hover:text-purple-600">
+                <Link href="/privacy" className="text-gray-600 hover:text-red-600">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="/terms" className="text-gray-600 hover:text-purple-600">
+                <Link href="/terms" className="text-gray-600 hover:text-red-600">
                   Terms of Service
                 </Link>
               </li>

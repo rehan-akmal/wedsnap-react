@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
@@ -29,8 +30,11 @@ import {
   TrendingUp,
   Upload,
   Users,
+  Trash2,
+  ExternalLink,
 } from "lucide-react"
-import { apiService } from "@/lib/api"
+import { apiService, getActiveStorageUrl } from "@/lib/api"
+import toast from "react-hot-toast"
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -46,6 +50,13 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) {
       router.push("/auth/login")
+    }
+  }, [user, router])
+
+  // Redirect superadmins to admin panel
+  useEffect(() => {
+    if (user && user.role === 'superadmin') {
+      router.push("/super-admin")
     }
   }, [user, router])
 
@@ -85,6 +96,30 @@ export default function Dashboard() {
       fetchDashboardData()
     }
   }, [user])
+
+  // Handle gig deletion
+  const handleDeleteGig = async (gigId: string) => {
+    if (!confirm("Are you sure you want to delete this gig? This action cannot be undone.")) {
+      return
+    }
+
+    try {
+      await apiService.gigs.delete(gigId)
+      toast.success("Gig deleted successfully")
+      
+      // Refresh both the gigs list and overview stats
+      const [updatedGigs, updatedOverviewStats] = await Promise.all([
+        apiService.seller.getGigs(),
+        apiService.dashboard.overview.getStats()
+      ])
+      
+      setSellerGigs(updatedGigs)
+      setOverviewStats(updatedOverviewStats)
+    } catch (error) {
+      console.error("Error deleting gig:", error)
+      toast.error("Failed to delete gig. Please try again.")
+    }
+  }
 
   if (!user) {
     return null
@@ -175,49 +210,98 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Active Gigs</CardTitle>
-                <CardDescription>Manage your active service listings</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {sellerGigs.filter((gig) => gig.isActive).slice(0, 2).map((gig) => (
-                    <div key={gig.id} className="flex items-center gap-4 p-3 border rounded-lg">
-                      <div className="relative h-16 w-16 flex-shrink-0">
-                        <Image
-                          src={gig.images?.[0] || "/placeholder.svg"}
-                          alt={gig.title}
-                          fill
-                          className="object-cover rounded-lg"
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{gig.title}</p>
-                        <div className="flex items-center text-sm text-gray-500">
-                          <span>Rs. {gig.packages?.[0]?.price?.toLocaleString()}</span>
-                          <span className="mx-1">•</span>
-                          <span>{gig.location}</span>
-                        </div>
-                      </div>
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href={`/seller/gigs/${gig.id}`}>View Details</Link>
-                      </Button>
-                    </div>
-                  ))}
-                  {sellerGigs.filter((gig) => gig.isActive).length === 0 && (
-                    <div className="text-center py-4">
-                      <p className="text-gray-500">No active gigs yet</p>
-                    </div>
-                  )}
-                  <Button variant="outline" size="sm" className="w-full" asChild>
-                    <Link href="/seller/gigs">View All Gigs</Link>
+          {/* Gigs Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Your Gigs</CardTitle>
+              <CardDescription>Manage your service listings with view and delete actions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {sellerGigs.length > 0 ? (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Image</TableHead>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Location</TableHead>
+                        <TableHead>Price</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sellerGigs.map((gig) => (
+                        <TableRow key={gig.id}>
+                          <TableCell>
+                            <div className="relative h-12 w-12">
+                              <Image
+                                src={getActiveStorageUrl(gig.images?.[0]) || "/placeholder.svg"}
+                                alt={gig.title}
+                                fill
+                                className="object-cover rounded-md"
+                              />
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{gig.title}</p>
+                              <p className="text-sm text-gray-500 line-clamp-2">{gig.description}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-gray-600">{gig.location}</span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="font-medium">
+                              Rs. {gig.packages?.[0]?.price?.toLocaleString() || "N/A"}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                asChild
+                              >
+                                <Link href={`/gigs/${gig.id}`}>
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  View
+                                </Link>
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDeleteGig(gig.id)}
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Delete
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="mx-auto h-12 w-12 text-gray-400 mb-4">
+                    <Camera className="h-12 w-12" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No gigs yet</h3>
+                  <p className="text-gray-500 mb-4">Get started by creating your first service listing</p>
+                  <Button asChild>
+                    <Link href="/seller/gigs/create">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Your First Gig
+                    </Link>
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              )}
+            </CardContent>
+          </Card>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
                 <CardTitle>Saved Gigs</CardTitle>

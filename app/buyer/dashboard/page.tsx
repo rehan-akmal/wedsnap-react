@@ -28,6 +28,13 @@ export default function BuyerDashboard() {
     }
   }, [user, router])
 
+  // Redirect superadmins to admin panel
+  useEffect(() => {
+    if (user && user.role === 'superadmin') {
+      router.push("/super-admin")
+    }
+  }, [user, router])
+
   // Fetch dashboard data
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -110,23 +117,73 @@ export default function BuyerDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {savedGigs.length > 0 ? (
               savedGigs.map((gig) => (
-                <Card key={gig.id}>
-                  <CardContent className="p-4">
-                    <div className="relative h-48 mb-4">
-                      <Image
-                        src={gig.images?.[0] || "/placeholder.svg"}
-                        alt={gig.title}
-                        fill
-                        className="object-cover rounded-lg"
-                      />
+                <Card key={gig.id} className="group hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-red-500 rounded-lg overflow-hidden">
+                  <div className="relative h-48 bg-gradient-to-br from-red-500 via-red-600 to-red-700">
+                    <Image
+                      src={gig.images?.[0] || "/placeholder.svg"}
+                      alt={gig.title}
+                      fill
+                      className="object-cover opacity-90 group-hover:opacity-75 transition-opacity duration-300"
+                    />
+                    {/* Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                    
+                    {/* Price Badge */}
+                    {gig.packages?.[0]?.price && (
+                      <div className="absolute top-3 right-3">
+                        <Badge className="bg-red-600 hover:bg-red-700 text-white border-0 rounded-md px-3 py-1 text-xs font-semibold shadow-lg">
+                          Rs. {gig.packages[0].price}
+                        </Badge>
+                      </div>
+                    )}
+                    
+                    {/* Saved Badge */}
+                    <div className="absolute top-3 left-3">
+                      <Badge className="bg-white/90 backdrop-blur-sm text-red-600 border-0 rounded-md px-2 py-1 text-xs font-medium">
+                        <Heart className="h-3 w-3 mr-1 fill-red-600" />
+                        Saved
+                      </Badge>
                     </div>
-                    <h3 className="font-semibold mb-2">{gig.title}</h3>
-                    <p className="text-sm text-gray-500 mb-4 line-clamp-2">{gig.description}</p>
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold">Rs. {gig.packages?.[0]?.price?.toLocaleString()}</span>
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href={`/gigs/${gig.id}`}>View Details</Link>
-                      </Button>
+                  </div>
+                  <CardContent className="p-5">
+                    <div className="space-y-3">
+                      <h3 className="font-bold text-lg line-clamp-1 text-gray-900 group-hover:text-red-600 transition-colors duration-200">
+                        {gig.title}
+                      </h3>
+                      <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
+                        {gig.description}
+                      </p>
+                      
+                      {/* Package Info */}
+                      {gig.packages?.[0] && (
+                        <div className="bg-gray-50 border border-gray-100 p-3 rounded-lg">
+                          <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Featured Package</p>
+                          <div className="flex justify-between items-center">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-sm text-gray-900 truncate">{gig.packages[0].name}</p>
+                              <p className="text-xs text-gray-500 truncate">{gig.packages[0].description}</p>
+                            </div>
+                            <div className="text-right ml-2">
+                              <p className="text-lg font-bold text-red-600">Rs. {gig.packages[0].price}</p>
+                              <p className="text-xs text-gray-500">{gig.packages[0].delivery_days} days</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="flex justify-between items-center pt-2">
+                        <Button variant="outline" size="sm" asChild className="border-gray-200 hover:border-red-500 hover:text-red-600 rounded-md">
+                          <Link href={`/gigs/${gig.id}`}>View Details</Link>
+                        </Button>
+                        <div className="flex gap-2">
+                          <Button variant="ghost" size="sm" className="text-gray-500 hover:text-red-600">
+                            <Heart className="h-4 w-4 fill-red-600" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-gray-500 hover:text-red-600">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

@@ -10,6 +10,8 @@ interface User {
   id: string
   name: string
   email: string
+  role?: string
+  avatar?: string
 }
 
 interface AuthContextType {
@@ -47,6 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             id: decoded.id || decoded.user_id || 'unknown',
             name: decoded.name || decoded.username || decoded.full_name || 'User',
             email: decoded.email || 'unknown@email.com',
+            role: decoded.role || 'user',
+            avatar: decoded.avatar,
           })
         }
       } catch (error) {
@@ -69,15 +73,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const decoded = jwtDecode<User & any>(response.token)
         console.log("Decoded token:", decoded)
         
-        setUser({
+        const userData = {
           id: decoded.id || decoded.user_id || 'unknown',
           name: decoded.name || decoded.username || decoded.full_name || 'User',
           email: decoded.email || email,
-        })
+          role: decoded.role || 'user',
+          avatar: decoded.avatar,
+        }
+        
+        setUser(userData)
 
-        router.push("/")
-        const userName = decoded.name || decoded.username || decoded.full_name
-        toast.success(`Welcome back${userName ? `, ${userName}` : ''}!`)
+        // Redirect based on user role
+        if (userData.role === 'superadmin') {
+          router.push("/super-admin")
+          toast.success(`Welcome to Admin Panel, ${userData.name}!`)
+        } else {
+          router.push("/")
+          toast.success(`Welcome back, ${userData.name}!`)
+        }
       } catch (decodeError) {
         console.error("Token decode error:", decodeError)
         // Still set some basic user info even if token decode fails
@@ -85,6 +98,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: 'temp',
           name: 'User',
           email: email,
+          role: 'user',
+          avatar: undefined,
         })
         router.push("/")
         toast.success("Welcome back!")
@@ -107,15 +122,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const decoded = jwtDecode<User & any>(response.token)
         console.log("Signup - Decoded token:", decoded)
         
-        setUser({
+        const userData = {
           id: decoded.id || decoded.user_id || 'unknown',
           name: decoded.name || decoded.username || decoded.full_name || name,
           email: decoded.email || email,
-        })
+          role: decoded.role || 'user',
+          avatar: decoded.avatar,
+        }
+        
+        setUser(userData)
 
-        router.push("/")
-        const userName = decoded.name || decoded.username || decoded.full_name || name
-        toast.success(`Welcome to WedSnap${userName ? `, ${userName}` : ''}!`)
+        // Redirect based on user role
+        if (userData.role === 'superadmin') {
+          router.push("/super-admin")
+          toast.success(`Welcome to Admin Panel, ${userData.name}!`)
+        } else {
+          router.push("/")
+          toast.success(`Welcome to WedSnap, ${userData.name}!`)
+        }
       } catch (decodeError) {
         console.error("Signup token decode error:", decodeError)
         // Still set user info even if token decode fails
@@ -123,6 +147,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: 'temp',
           name: name,
           email: email,
+          role: 'user',
+          avatar: undefined,
         })
         router.push("/")
         toast.success(`Welcome to WedSnap, ${name}!`)

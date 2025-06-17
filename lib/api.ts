@@ -91,7 +91,22 @@ export const api = {
         errorData = { message: "An unknown error occurred" }
       }
 
-      const errorMessage = errorData.message || `Error: ${response.status} ${response.statusText}`
+      // Handle different error response formats
+      let errorMessage: string
+      if (errorData.errors && Array.isArray(errorData.errors)) {
+        // Backend returns errors as an array
+        errorMessage = errorData.errors.join(', ')
+      } else if (errorData.error) {
+        // Backend returns single error
+        errorMessage = errorData.error
+      } else if (errorData.message) {
+        // Backend returns message
+        errorMessage = errorData.message
+      } else {
+        // Fallback to status text
+        errorMessage = `Error: ${response.status} ${response.statusText}`
+      }
+
       throw new ApiError(response.status, errorMessage, errorData)
     }
 
@@ -196,10 +211,9 @@ export const api = {
     if (error instanceof ApiError) {
       // Handle specific error codes
       if (error.status === 401) {
-        // Unauthorized - clear token and redirect to login
-        // localStorage.removeItem("token")
-        //window.location.href = "/auth/login"
-        toast.error("Session expired. Please log in again to continue.")
+        // For 401 errors, show the specific error message from the backend
+        // instead of a generic "session expired" message
+        toast.error(error.message || "Authentication failed")
       } else {
         // Show error message
         toast.error(error.message || "An error occurred")
@@ -284,11 +298,12 @@ export const apiService = {
     getProfile: () => api.get<any>("/users/me"),
     updateProfile: (data: any) => api.put<any>("/users/me", { body: data }),
     getAvailability: (userId: string) => api.get<any[]>(`/users/${userId}/availability`),
+    getEstimateCalculatorSettings: (userId: string) => api.get<any>(`/users/${userId}/estimate_calculator_settings`),
   },
 
   // User settings endpoints
   user: {
-    getSettings: () => api.get<any>("/auth/profile"),
+    getSettings: () => api.get<any>("/users/settings"),
     updateProfile: (data: any) => api.put<any>("/auth/profile", { body: data }),
     uploadProfileImage: (formData: FormData) => {
       const url = api.buildUrl("/auth/profile/avatar")
@@ -308,9 +323,11 @@ export const apiService = {
     updatePassword: (data: { currentPassword: string; newPassword: string }) => 
       api.put<any>("/auth/password", { body: data }),
     updateNotificationSettings: (data: any) => 
-      api.put<any>("/auth/notifications", { body: data }),
+      api.put<any>("/users/update_notification_settings", { body: { notifications: data } }),
     updateAvailability: (data: any) => 
-      api.put<any>("/auth/availability", { body: data }),
+      api.put<any>("/users/update_availability_settings", { body: { availability: data } }),
+    updateEstimateCalculatorSettings: (data: any) => 
+      api.put<any>("/users/update_estimate_calculator_settings", { body: { estimate_calculator: data } }),
     deleteAccount: () => api.delete<any>("/auth/account"),
   },
 
@@ -319,9 +336,9 @@ export const apiService = {
     getAll: () => api.get<any[]>("/availabilities"),
     getById: (id: string) => api.get<any>(`/availabilities/${id}`),
     create: (data: { date: string; available: boolean }) => 
-      api.post<any>("/availabilities", { body: { availability: { date: data.date, is_available: data.available } } }),
+      api.post<any>("/availabilities", { body: { availability: { date: data.date, available: data.available } } }),
     update: (id: string, data: { date: string; available: boolean }) => 
-      api.put<any>(`/availabilities/${id}`, { body: { availability: { date: data.date, is_available: data.available } } }),
+      api.put<any>(`/availabilities/${id}`, { body: { availability: { date: data.date, available: data.available } } }),
     delete: (id: string) => api.delete<{ message: string }>(`/availabilities/${id}`),
     check: (date: string) => api.get<any>(`/availabilities/check/${date}`),
   },

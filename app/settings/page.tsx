@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/hooks/use-auth"
-import { Camera, Save, Lock, Bell, Calendar, User } from "lucide-react"
+import { Camera, Save, Lock, Bell, Calendar, User, Calculator } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { apiService, getActiveStorageUrl } from "@/lib/api"
 
@@ -62,6 +62,15 @@ export default function SettingsPage() {
   const [startTime, setStartTime] = useState("09:00")
   const [endTime, setEndTime] = useState("17:00")
 
+  // Estimate calculator settings
+  const [photographyCoverage, setPhotographyCoverage] = useState(18000)
+  const [videographyCoverage, setVideographyCoverage] = useState(25000)
+  const [droneFootage, setDroneFootage] = useState(8000)
+  const [gimbalStabilizer, setGimbalStabilizer] = useState(5000)
+  const [basicColorCorrection, setBasicColorCorrection] = useState(4000)
+  const [advancedEditingPackage, setAdvancedEditingPackage] = useState(7000)
+  const [expressDeliverySurcharge, setExpressDeliverySurcharge] = useState(20)
+
   // Fetch user settings
   useEffect(() => {
     const fetchUserSettings = async () => {
@@ -90,6 +99,15 @@ export default function SettingsPage() {
         setAvailableDays(data.availability?.days || ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
         setStartTime(data.availability?.startTime || "09:00")
         setEndTime(data.availability?.endTime || "17:00")
+
+        // Set estimate calculator settings
+        setPhotographyCoverage(data.estimate_calculator?.photography_coverage || 18000)
+        setVideographyCoverage(data.estimate_calculator?.videography_coverage || 25000)
+        setDroneFootage(data.estimate_calculator?.drone_footage || 8000)
+        setGimbalStabilizer(data.estimate_calculator?.gimbal_stabilizer || 5000)
+        setBasicColorCorrection(data.estimate_calculator?.basic_color_correction || 4000)
+        setAdvancedEditingPackage(data.estimate_calculator?.advanced_editing_package || 7000)
+        setExpressDeliverySurcharge(data.estimate_calculator?.express_delivery_surcharge || 20)
       } catch (error) {
         console.error("Error fetching user settings:", error)
         toast({
@@ -298,6 +316,37 @@ export default function SettingsPage() {
     }
   }
 
+  // Handle estimate calculator settings
+  const handleEstimateCalculatorSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    try {
+      const estimateCalculatorData = {
+        photography_coverage: photographyCoverage,
+        videography_coverage: videographyCoverage,
+        drone_footage: droneFootage,
+        gimbal_stabilizer: gimbalStabilizer,
+        basic_color_correction: basicColorCorrection,
+        advanced_editing_package: advancedEditingPackage,
+        express_delivery_surcharge: expressDeliverySurcharge,
+      }
+
+      await apiService.user.updateEstimateCalculatorSettings(estimateCalculatorData)
+
+      toast({
+        title: "Estimate calculator settings updated",
+        description: "Your estimate calculator defaults have been updated successfully.",
+      })
+    } catch (error) {
+      console.error("Error updating estimate calculator settings:", error)
+      toast({
+        title: "Update failed",
+        description: "Failed to update your estimate calculator settings. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
   // Handle email update
   const handleEmailUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -360,7 +409,7 @@ export default function SettingsPage() {
       <h1 className="text-3xl font-bold mb-8">Account Settings</h1>
 
       <Tabs defaultValue="profile" className="mb-8">
-        <TabsList className="grid grid-cols-4 mb-8">
+        <TabsList className="grid grid-cols-5 mb-8">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             Profile
@@ -372,6 +421,10 @@ export default function SettingsPage() {
           <TabsTrigger value="notifications" className="flex items-center gap-2">
             <Bell className="h-4 w-4" />
             Notifications
+          </TabsTrigger>
+          <TabsTrigger value="calculator" className="flex items-center gap-2">
+            <Calculator className="h-4 w-4" />
+            Calculator
           </TabsTrigger>
         </TabsList>
 
@@ -538,7 +591,7 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle>Delete Account</CardTitle>
                 <CardDescription>Permanently delete your account and all of your data</CardDescription>
@@ -572,7 +625,7 @@ export default function SettingsPage() {
                   Delete Account
                 </Button>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
         </TabsContent>
 
@@ -683,6 +736,105 @@ export default function SettingsPage() {
                 <div className="flex justify-end">
                   <Button type="submit" className="bg-red-600 hover:bg-red-700">
                     Save Availability
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Estimate Calculator Settings */}
+        <TabsContent value="calculator">
+          <Card>
+            <CardHeader>
+              <CardTitle>Estimate Calculator Settings</CardTitle>
+              <CardDescription>Set default prices for your estimate calculator services</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleEstimateCalculatorSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="photography_coverage">Photography Coverage (PKR)</Label>
+                    <Input
+                      id="photography_coverage"
+                      type="number"
+                      value={photographyCoverage}
+                      onChange={(e) => setPhotographyCoverage(Number(e.target.value))}
+                      placeholder="18000"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="videography_coverage">Videography Coverage (PKR)</Label>
+                    <Input
+                      id="videography_coverage"
+                      type="number"
+                      value={videographyCoverage}
+                      onChange={(e) => setVideographyCoverage(Number(e.target.value))}
+                      placeholder="25000"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="drone_footage">Drone Footage (PKR)</Label>
+                    <Input
+                      id="drone_footage"
+                      type="number"
+                      value={droneFootage}
+                      onChange={(e) => setDroneFootage(Number(e.target.value))}
+                      placeholder="8000"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="gimbal_stabilizer">Gimbal/Stabilizer (PKR)</Label>
+                    <Input
+                      id="gimbal_stabilizer"
+                      type="number"
+                      value={gimbalStabilizer}
+                      onChange={(e) => setGimbalStabilizer(Number(e.target.value))}
+                      placeholder="5000"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="basic_color_correction">Basic Color Correction (PKR)</Label>
+                    <Input
+                      id="basic_color_correction"
+                      type="number"
+                      value={basicColorCorrection}
+                      onChange={(e) => setBasicColorCorrection(Number(e.target.value))}
+                      placeholder="4000"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="advanced_editing_package">Advanced Editing Package (PKR)</Label>
+                    <Input
+                      id="advanced_editing_package"
+                      type="number"
+                      value={advancedEditingPackage}
+                      onChange={(e) => setAdvancedEditingPackage(Number(e.target.value))}
+                      placeholder="7000"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="express_delivery_surcharge">Express Delivery Surcharge (%)</Label>
+                    <Input
+                      id="express_delivery_surcharge"
+                      type="number"
+                      value={expressDeliverySurcharge}
+                      onChange={(e) => setExpressDeliverySurcharge(Number(e.target.value))}
+                      placeholder="20"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button type="submit" className="bg-red-600 hover:bg-red-700">
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Calculator Settings
                   </Button>
                 </div>
               </form>

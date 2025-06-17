@@ -7,6 +7,7 @@ import { AppProvider } from "@/context/app-context"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 import { Toaster } from "react-hot-toast"
+import { ConditionalLayout } from "@/components/conditional-layout"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -27,11 +28,9 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             <AppProvider>
-              <div className="flex min-h-screen flex-col">
-                <Header />
-                <main className="flex-1">{children}</main>
-                <Footer />
-              </div>
+              <ConditionalLayout>
+                {children}
+              </ConditionalLayout>
               <Toaster
                 position="top-right"
                 toastOptions={{

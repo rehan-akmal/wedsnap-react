@@ -21,6 +21,7 @@ import {
   Info,
   Package,
   Heart,
+  Calculator
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -29,6 +30,7 @@ import toast from "react-hot-toast"
 import { useAuth } from "@/hooks/use-auth"
 import { StartConversation } from "@/components/start-conversation"
 import SellerAvailabilityCalendar from "@/components/seller-availability-calendar"
+import EstimateCalculator from "@/components/estimate-calculator"
 
 export default function GigDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { user } = useAuth()
@@ -173,7 +175,7 @@ export default function GigDetailPage({ params }: { params: Promise<{ id: string
 
           {/* Tabs */}
           <Tabs defaultValue="description" className="mb-8">
-            <TabsList className="grid grid-cols-4 mb-4">
+            <TabsList className="grid grid-cols-5 mb-4">
               <TabsTrigger value="description" className="flex items-center gap-1">
                 <Info className="h-4 w-4" />
                 Description
@@ -185,6 +187,10 @@ export default function GigDetailPage({ params }: { params: Promise<{ id: string
               <TabsTrigger value="availability" className="flex items-center gap-1">
                 <CalendarIcon className="h-4 w-4" />
                 Availability
+              </TabsTrigger>
+              <TabsTrigger value="calculator" className="flex items-center gap-1">
+                <Calculator className="h-4 w-4" />
+                Estimate
               </TabsTrigger>
               <TabsTrigger value="faq" className="flex items-center gap-1">
                 <MessageSquare className="h-4 w-4" />
@@ -256,6 +262,13 @@ export default function GigDetailPage({ params }: { params: Promise<{ id: string
 
             <TabsContent value="availability">
               <SellerAvailabilityCalendar 
+                sellerId={gig.user_id.toString()} 
+                sellerName={gig.user_name} 
+              />
+            </TabsContent>
+
+            <TabsContent value="calculator">
+              <EstimateCalculator 
                 sellerId={gig.user_id.toString()} 
                 sellerName={gig.user_name} 
               />

@@ -102,67 +102,86 @@ export default function PopularGigs() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr">
       {gigs.map((gig) => (
-        <Link href={`/gigs/${gig.id}`} key={gig.id} className="h-full">
-          <Card className="h-full hover:shadow-lg transition-all duration-300 border-2 hover:border-red-500 rounded-none">
-            <div className="relative h-48 w-full bg-gradient-to-r from-blue-500 to-purple-500">
-              <Image src={gig?.images && gig?.images.length > 0 && getActiveStorageUrl(gig?.images[0]) || "/placeholder.svg"} alt={gig.title} fill className="object-cover opacity-75 rounded-none" />
+        <Link href={`/gigs/${gig.id}`} key={gig.id} className="h-full group">
+          <Card className="h-full hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-red-500 rounded-lg overflow-hidden group-hover:scale-[1.02]">
+            {/* Image Section with Overlay */}
+            <div className="relative h-48 w-full bg-gradient-to-br from-red-500 via-red-600 to-red-700">
+              <Image src={gig?.images && gig?.images.length > 0 && getActiveStorageUrl(gig?.images[0]) || "/placeholder.svg"} alt={gig.title} fill className="object-cover opacity-90 group-hover:opacity-75 transition-opacity duration-300" />
+              
+              {/* Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+              
+              {/* Price Badge */}
+              {gig.packages && gig.packages.length > 0 && (
+                <div className="absolute top-3 right-3">
+                  <Badge className="bg-red-600 hover:bg-red-700 text-white border-0 rounded-md px-3 py-1 text-xs font-semibold shadow-lg">
+                    Rs. {gig.packages[0].price}
+                  </Badge>
+                </div>
+              )}
+              
+              {/* Location Badge */}
+              <div className="absolute bottom-3 left-3">
+                <Badge className="bg-white/90 backdrop-blur-sm text-gray-800 border-0 rounded-md px-2 py-1 text-xs font-medium">
+                  {gig.location}
+                </Badge>
+              </div>
             </div>
-            <CardContent className="p-4 flex flex-col h-[calc(100%-12rem)]">
+
+            <CardContent className="p-5 flex flex-col h-[calc(100%-12rem)]">
               <div className="flex flex-col h-full">
-                {/* Top Section */}
-                <div className="space-y-3">
-                  {/* User Info */}
-                  <div className="flex items-center gap-2">
-                    <div className="relative w-8 h-8 overflow-hidden bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center rounded-none">
-                      <span className="text-sm font-medium text-white">
-                        {gig.user_name.charAt(0)}
-                      </span>
-                    </div>
-                    <span className="text-sm font-medium text-gray-700">{gig.user_name}</span>
+                {/* User Info Section */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="relative w-10 h-10 overflow-hidden bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center rounded-lg shadow-md">
+                    <span className="text-sm font-bold text-white">
+                      {gig.user_name.charAt(0).toUpperCase()}
+                    </span>
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 truncate">{gig.user_name}</p>
+                    <p className="text-xs text-gray-500">Professional Photographer</p>
+                  </div>
+                </div>
 
-                  {/* Title and Description */}
-                  <div>
-                    <h3 className="font-semibold mb-1 line-clamp-1 text-gray-800">{gig.title}</h3>
-                    <p className="text-sm text-gray-600 line-clamp-2">{gig.description}</p>
-                  </div>
-
-                  {/* Badges */}
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 rounded-none">
-                      {gig.location}
-                    </Badge>
-                    {gig.packages && gig.packages.length > 0 && (
-                      <Badge variant="secondary" className="text-xs bg-green-50 text-green-700 rounded-none">
-                        Starting at ${gig.packages[0].price}
-                      </Badge>
-                    )}
-                  </div>
+                {/* Title and Description */}
+                <div className="mb-4">
+                  <h3 className="font-bold text-lg mb-2 line-clamp-1 text-gray-900 group-hover:text-red-600 transition-colors duration-200">
+                    {gig.title}
+                  </h3>
+                  <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
+                    {gig.description}
+                  </p>
                 </div>
 
                 {/* Bottom Section */}
                 {gig.packages && gig.packages.length > 0 && (
-                  <div className="mt-auto">
-                    <div className="mb-2">
-                      <p className="text-xs font-medium text-gray-500 mb-1">Available Packages:</p>
-                      <div className="space-y-1">
-                        {gig.packages.map((pkg: Package) => (
-                          <div key={pkg.id} className="flex justify-between items-center text-xs bg-gray-50 p-1.5 rounded-none">
-                            <div className="flex flex-col">
-                              <span className="font-medium text-gray-700">{pkg.name}</span>
-                              <span className="text-gray-500 text-[10px] line-clamp-1">{pkg.description}</span>
-                            </div>
-                            <div className="flex flex-col items-end">
-                              <span className="text-blue-600 font-semibold">${pkg.price}</span>
-                              <span className="text-[10px] text-gray-500">{pkg.delivery_days} days</span>
-                            </div>
-                          </div>
-                        ))}
+                  <div className="mt-auto space-y-3">
+                    {/* Package Preview */}
+                    <div className="bg-gray-50 border border-gray-100 p-3 rounded-lg">
+                      <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Featured Package</p>
+                      <div className="flex justify-between items-center">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm text-gray-900 truncate">{gig.packages[0].name}</p>
+                          <p className="text-xs text-gray-500 truncate">{gig.packages[0].description}</p>
+                        </div>
+                        <div className="text-right ml-2">
+                          <p className="text-lg font-bold text-red-600">Rs. {gig.packages[0].price}</p>
+                          <p className="text-xs text-gray-500">{gig.packages[0].delivery_days} days</p>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex justify-between items-center text-xs text-gray-500 pt-2 border-t">
-                      <span>Posted on</span>
-                      <span>{new Date(gig.created_at).toLocaleDateString()}</span>
+
+                    {/* Additional Info */}
+                    <div className="flex justify-between items-center text-xs text-gray-500 pt-2 border-t border-gray-100">
+                      <div className="flex items-center gap-1">
+                        <span>Posted</span>
+                        <span className="font-medium">{new Date(gig.created_at).toLocaleDateString()}</span>
+                      </div>
+                      {gig.packages.length > 1 && (
+                        <Badge variant="outline" className="text-xs border-gray-200 text-gray-600 rounded-md">
+                          +{gig.packages.length - 1} more packages
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 )}
