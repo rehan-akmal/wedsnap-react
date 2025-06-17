@@ -12,7 +12,7 @@ import { Star, Search, MapPin, Filter } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useApp } from "@/context/app-context"
-import { apiService } from "@/lib/api"
+import { apiService, getActiveStorageUrl } from "@/lib/api"
 
 interface Gig {
   id: number
@@ -23,6 +23,7 @@ interface Gig {
   updated_at: string
   user_name: string
   packages?: Package[]
+  images?: string[]
 }
 
 interface Package {
@@ -61,11 +62,11 @@ export default function GigsPage() {
 
         // Fetch all gigs
         const response = await apiService.gigs.getAll() as ApiResponse
-        setAllGigs(response)
-        setFilteredGigs(response)
+        setAllGigs(response.gigs)
+        setFilteredGigs(response.gigs)
 
         // Extract unique cities from gigs
-        const uniqueCities = [...new Set(response.map(gig => gig.location))]
+        const uniqueCities = [...new Set(response.gigs?.map((gig: Gig) => gig?.location))]
         setCities(uniqueCities)
 
         // Extract unique categories (if needed)
@@ -83,9 +84,9 @@ export default function GigsPage() {
 
   // Apply filters when dependencies change
   useEffect(() => {
-    if (allGigs.length === 0) return
+    if (allGigs?.length === 0) return
 
-    const filtered = allGigs.filter((gig) => {
+    const filtered = allGigs?.filter((gig) => {
       // Search query filter
       const matchesSearch =
         gig.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -320,18 +321,18 @@ export default function GigsPage() {
 
       {/* Results Count */}
       <div className="mb-6">
-        <p className="text-gray-600">Showing {filteredGigs.length} results</p>
+        <p className="text-gray-600">Showing {filteredGigs?.length} results</p>
       </div>
 
       {/* Gigs Grid */}
-      {filteredGigs.length > 0 ? (
+      {filteredGigs?.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr">
           {filteredGigs.map((gig) => (
             <Link href={`/gigs/${gig.id}`} key={gig.id} className="h-full">
               <Card className="h-full hover:shadow-lg transition-all duration-300 border-2 hover:border-blue-500 rounded-none">
                 <div className="relative h-48 w-full bg-gradient-to-r from-blue-500 to-purple-500">
                   <Image
-                    src="/placeholder.svg"
+                    src={gig?.images && gig?.images.length > 0 && getActiveStorageUrl(gig?.images[0]) || "/placeholder.svg"}
                     alt={gig.title}
                     fill
                     className="object-cover opacity-75 rounded-none"

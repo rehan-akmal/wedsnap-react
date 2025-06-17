@@ -1,10 +1,10 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import React, { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { jwtDecode } from "jwt-decode"
 import { apiService } from "@/lib/api"
-import { useToast } from "@/hooks/use-toast"
+import toast from "react-hot-toast"
 
 interface User {
   id: string
@@ -28,28 +28,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
-  const { toast } = useToast()
 
   useEffect(() => {
     // Check if user is logged in on initial load
     const token = localStorage.getItem("token")
     if (token) {
       try {
-        const decoded = jwtDecode<User & { exp: number }>(token)
+        const decoded = jwtDecode<User & { exp: number } & any>(token)
+        console.log("Token validation - decoded:", decoded)
 
         // Check if token is expired
         const currentTime = Date.now() / 1000
-        if (decoded.exp < currentTime) {
+        if (decoded.exp && decoded.exp < currentTime) {
           localStorage.removeItem("token")
           setUser(null)
         } else {
           setUser({
-            id: decoded.id,
-            name: decoded.name,
-            email: decoded.email,
+            id: decoded.id || decoded.user_id || 'unknown',
+            name: decoded.name || decoded.username || decoded.full_name || 'User',
+            email: decoded.email || 'unknown@email.com',
           })
         }
       } catch (error) {
+        console.error("Token validation error:", error)
         localStorage.removeItem("token")
         setUser(null)
       }
@@ -64,18 +65,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("Login response:", response)
       localStorage.setItem("token", response.token)
 
-      const decoded = jwtDecode<User>(response.token)
-      setUser({
-        id: decoded.id,
-        name: decoded.name,
-        email: decoded.email,
-      })
+      try {
+        const decoded = jwtDecode<User & any>(response.token)
+        console.log("Decoded token:", decoded)
+        
+        setUser({
+          id: decoded.id || decoded.user_id || 'unknown',
+          name: decoded.name || decoded.username || decoded.full_name || 'User',
+          email: decoded.email || email,
+        })
 
-     // router.push("/")
-      toast({
-        title: "Login successful",
-        description: `Welcome back, ${decoded.name}!`,
-      })
+        router.push("/")
+        const userName = decoded.name || decoded.username || decoded.full_name
+        toast.success(`Welcome back${userName ? `, ${userName}` : ''}!`)
+      } catch (decodeError) {
+        console.error("Token decode error:", decodeError)
+        // Still set some basic user info even if token decode fails
+        setUser({
+          id: 'temp',
+          name: 'User',
+          email: email,
+        })
+        router.push("/")
+        toast.success("Welcome back!")
+      }
     } catch (error) {
       console.error("Login error:", error)
       throw error
@@ -90,18 +103,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await apiService.auth.signup(name, email, password)
       localStorage.setItem("token", response.token)
 
-      const decoded = jwtDecode<User>(response.token)
-      setUser({
-        id: decoded.id,
-        name: decoded.name,
-        email: decoded.email,
-      })
+      try {
+        const decoded = jwtDecode<User & any>(response.token)
+        console.log("Signup - Decoded token:", decoded)
+        
+        setUser({
+          id: decoded.id || decoded.user_id || 'unknown',
+          name: decoded.name || decoded.username || decoded.full_name || name,
+          email: decoded.email || email,
+        })
 
-      router.push("/")
-      toast({
-        title: "Signup successful",
-        description: `Welcome to WedSnap, ${decoded.name}!`,
-      })
+        router.push("/")
+        const userName = decoded.name || decoded.username || decoded.full_name || name
+        toast.success(`Welcome to WedSnap${userName ? `, ${userName}` : ''}!`)
+      } catch (decodeError) {
+        console.error("Signup token decode error:", decodeError)
+        // Still set user info even if token decode fails
+        setUser({
+          id: 'temp',
+          name: name,
+          email: email,
+        })
+        router.push("/")
+        toast.success(`Welcome to WedSnap, ${name}!`)
+      }
     } catch (error) {
       console.error("Signup error:", error)
       throw error
@@ -114,20 +139,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("token")
     setUser(null)
     router.push("/")
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out.",
-    })
+    toast.success("You have been successfully logged out.")
   }
 
   const forgotPassword = async (email: string) => {
     setLoading(true)
     try {
       await apiService.auth.forgotPassword(email)
-      toast({
-        title: "Password reset email sent",
-        description: "If your email is registered, you will receive a password reset link.",
-      })
+      toast.success("Password reset email sent")
     } catch (error) {
       console.error("Forgot password error:", error)
       throw error
@@ -140,10 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true)
     try {
       await apiService.auth.resetPassword(token, password)
-      toast({
-        title: "Password reset successful",
-        description: "Your password has been reset. You can now log in with your new password.",
-      })
+      toast.success("Password reset successful")
     } catch (error) {
       console.error("Reset password error:", error)
       throw error

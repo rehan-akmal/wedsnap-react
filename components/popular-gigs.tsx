@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import Image from "next/image"
 import { Star } from "lucide-react"
-import { apiService } from "@/lib/api"
+import { apiService, getActiveStorageUrl } from "@/lib/api"
 
 interface Package {
   id: number;
@@ -28,18 +28,17 @@ interface Gig {
   updated_at: string;
   user_name: string;
   packages: Package[];
+  images: string[];
 }
 
 export default function PopularGigs() {
-  const [gigs, setGigs] = useState([])
+  const [gigs, setGigs] = useState<Gig[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchPopularGigs = async () => {
       try {
         setLoading(true)
-        // Use the existing getAll method with parameters to fetch popular gigs
-        // Sort by rating and limit to 4 items
         const response = await apiService.gigs.getAll({
           sort: "rating",
           limit: "4",
@@ -47,8 +46,10 @@ export default function PopularGigs() {
         })
         console.log("API Response:", response)
         console.log("Gigs data:", response)
-        if (response) {
+        if (response && Array.isArray(response)) {
           setGigs(response)
+        } else if (response && response.gigs && Array.isArray(response.gigs)) {
+          setGigs(response.gigs)
         } else {
           console.error("Invalid response structure:", response)
           setGigs([])
@@ -102,9 +103,9 @@ export default function PopularGigs() {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr">
       {gigs.map((gig) => (
         <Link href={`/gigs/${gig.id}`} key={gig.id} className="h-full">
-          <Card className="h-full hover:shadow-lg transition-all duration-300 border-2 hover:border-blue-500 rounded-none">
+          <Card className="h-full hover:shadow-lg transition-all duration-300 border-2 hover:border-red-500 rounded-none">
             <div className="relative h-48 w-full bg-gradient-to-r from-blue-500 to-purple-500">
-              <Image src="/placeholder.svg" alt={gig.title} fill className="object-cover opacity-75 rounded-none" />
+              <Image src={gig?.images && gig?.images.length > 0 && getActiveStorageUrl(gig?.images[0]) || "/placeholder.svg"} alt={gig.title} fill className="object-cover opacity-75 rounded-none" />
             </div>
             <CardContent className="p-4 flex flex-col h-[calc(100%-12rem)]">
               <div className="flex flex-col h-full">

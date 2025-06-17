@@ -1,7 +1,13 @@
-import { toast } from "@/hooks/use-toast"
+import toast from "react-hot-toast"
 
 // API configuration
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1"
+
+// Active Storage URL configuration
+export const getActiveStorageUrl = (path: string): string => {
+  if (path?.startsWith('http')) return path
+  return `${API_BASE_URL.replace('/api/v1', '')}${path}`
+}
 
 // Error handling
 export class ApiError extends Error {
@@ -193,33 +199,17 @@ export const api = {
         // Unauthorized - clear token and redirect to login
         // localStorage.removeItem("token")
         //window.location.href = "/auth/login"
-        toast({
-          title: "Session expired",
-          description: "Please log in again to continue.",
-          variant: "destructive",
-        })
+        toast.error("Session expired. Please log in again to continue.")
       } else {
         // Show error message
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        })
+        toast.error(error.message || "An error occurred")
       }
     } else if (error instanceof Error) {
       // Network or other errors
-      toast({
-        title: "Error",
-        description: error.message || "An unknown error occurred",
-        variant: "destructive",
-      })
+      toast.error(error.message || "An unknown error occurred")
     } else {
       // Unknown errors
-      toast({
-        title: "Error",
-        description: "An unknown error occurred",
-        variant: "destructive",
-      })
+      toast.error("An unknown error occurred")
     }
 
     console.error("API Error:", error)
@@ -236,19 +226,18 @@ export const apiService = {
         requiresAuth: false,
       }),
 
-      signup: (name: string, email: string, password: string) =>
-        api.post<{ token: string; user: any }>("/auth/signup", {
-          body: {
-            user: {
-              name,
-              email,
-              password,
-              password_confirmation: password,
-            }
-          },
-          requiresAuth: false,
-        }),
-      
+    signup: (name: string, email: string, password: string) =>
+      api.post<{ token: string; user: any }>("/auth/signup", {
+        body: {
+          user: {
+            name,
+            email,
+            password,
+            password_confirmation: password,
+          }
+        },
+        requiresAuth: false,
+      }),
 
     forgotPassword: (email: string) =>
       api.post<{ message: string }>("/auth/forgot-password", {
@@ -261,60 +250,197 @@ export const apiService = {
         body: { token, password },
         requiresAuth: false,
       }),
+
+    profile: () => api.get<{ user: any }>("/auth/profile"),
+  },
+
+  // Dashboard endpoints
+  dashboard: {
+    seller: {
+      getStats: () => api.get<any>("/dashboard/seller/stats"),
+    },
+    buyer: {
+      getStats: () => api.get<any>("/dashboard/buyer/stats"),
+    },
+    overview: {
+      getStats: () => api.get<any>("/dashboard/overview"),
+    },
+  },
+
+  // Seller endpoints
+  seller: {
+    getGigs: () => api.get<any[]>("/gigs"),
+    getStats: () => api.get<any>("/dashboard/seller/stats"),
+  },
+
+  // Buyer endpoints
+  buyer: {
+    getSavedGigs: () => api.get<any[]>("/gigs/saved"),
+    getStats: () => api.get<any>("/dashboard/buyer/stats"),
   },
 
   // User endpoints
   users: {
     getProfile: () => api.get<any>("/users/me"),
-
     updateProfile: (data: any) => api.put<any>("/users/me", { body: data }),
+    getAvailability: (userId: string) => api.get<any[]>(`/users/${userId}/availability`),
+  },
+
+  // User settings endpoints
+  user: {
+    getSettings: () => api.get<any>("/auth/profile"),
+    updateProfile: (data: any) => api.put<any>("/auth/profile", { body: data }),
+    uploadProfileImage: (formData: FormData) => {
+      const url = api.buildUrl("/auth/profile/avatar")
+      const headers = new Headers()
+      const token = api.getToken()
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`)
+      }
+      
+      return fetch(url, {
+        method: "POST",
+        headers,
+        body: formData,
+        credentials: "include",
+      }).then(response => api.handleResponse<any>(response))
+    },
+    updatePassword: (data: { currentPassword: string; newPassword: string }) => 
+      api.put<any>("/auth/password", { body: data }),
+    updateNotificationSettings: (data: any) => 
+      api.put<any>("/auth/notifications", { body: data }),
+    updateAvailability: (data: any) => 
+      api.put<any>("/auth/availability", { body: data }),
+    deleteAccount: () => api.delete<any>("/auth/account"),
+  },
+
+  // Availability endpoints
+  availability: {
+    getAll: () => api.get<any[]>("/availabilities"),
+    getById: (id: string) => api.get<any>(`/availabilities/${id}`),
+    create: (data: { date: string; available: boolean }) => 
+      api.post<any>("/availabilities", { body: { availability: { date: data.date, is_available: data.available } } }),
+    update: (id: string, data: { date: string; available: boolean }) => 
+      api.put<any>(`/availabilities/${id}`, { body: { availability: { date: data.date, is_available: data.available } } }),
+    delete: (id: string) => api.delete<{ message: string }>(`/availabilities/${id}`),
+    check: (date: string) => api.get<any>(`/availabilities/check/${date}`),
   },
 
   // Gig endpoints
   gigs: {
     getAll: (params?: any) => api.get<{ gigs: any; pagination: any }>("/gigs", { params }),
-
     getById: (id: string) => api.get<any>(`/gigs/${id}`),
-
     create: (data: any) => api.post<any>("/gigs", { body: data }),
-
+    createWithCustomErrorHandling: async (data: any): Promise<any> => {
+      try {
+        const url = api.buildUrl("/gigs")
+        const headers = new Headers(api.buildHeaders({ requiresAuth: true }))
+        
+        // Create FormData for file upload
+        const formData = new FormData()
+        
+        // Add images to FormData
+        if (data.gig.images && data.gig.images.length > 0) {
+          data.gig.images.forEach((image: File) => {
+            formData.append('gig[images][]', image)
+          })
+        }
+        
+        // Add other gig data
+        const gigData = { ...data.gig }
+        delete gigData.images // Remove images from the JSON data
+        
+        // Add basic fields
+        formData.append('gig[title]', gigData.title)
+        formData.append('gig[description]', gigData.description)
+        formData.append('gig[location]', gigData.location)
+        formData.append('gig[phone_number]', gigData.phone_number)
+        
+        // Add category_ids
+        if (gigData.category_ids) {
+          gigData.category_ids.forEach((category: string) => {
+            formData.append('gig[category_ids][]', category)
+          })
+        }
+        
+        // Add packages
+        if (gigData.packages_attributes) {
+          gigData.packages_attributes.forEach((pkg: any, index: number) => {
+            formData.append(`gig[packages_attributes][${index}][name]`, pkg.name)
+            formData.append(`gig[packages_attributes][${index}][description]`, pkg.description)
+            formData.append(`gig[packages_attributes][${index}][price]`, pkg.price.toString())
+            formData.append(`gig[packages_attributes][${index}][delivery_days]`, pkg.delivery_days.toString())
+            formData.append(`gig[packages_attributes][${index}][revisions]`, pkg.revisions.toString())
+          })
+        }
+        
+        // Add features
+        if (gigData.features_attributes) {
+          gigData.features_attributes.forEach((feature: any, index: number) => {
+            formData.append(`gig[features_attributes][${index}][name]`, feature.name)
+          })
+        }
+        
+        // Add FAQs
+        if (gigData.faqs_attributes) {
+          gigData.faqs_attributes.forEach((faq: any, index: number) => {
+            formData.append(`gig[faqs_attributes][${index}][question]`, faq.question)
+            formData.append(`gig[faqs_attributes][${index}][answer]`, faq.answer)
+          })
+        }
+        
+        // Remove Content-Type header to let the browser set it with the boundary
+        headers.delete('Content-Type')
+        
+        const response = await fetch(url, {
+          method: "POST",
+          headers,
+          body: formData,
+          credentials: "include",
+        })
+        return await api.handleResponse<any>(response)
+      } catch (error) {
+        // Don't call api.handleError to avoid automatic toast
+        console.error("Gig creation error:", error)
+        throw error
+      }
+    },
     update: (id: string, data: any) => api.put<any>(`/gigs/${id}`, { body: data }),
-
+    updateWithCustomErrorHandling: async (id: string, data: any): Promise<any> => {
+      try {
+        const url = api.buildUrl(`/gigs/${id}`)
+        const headers = api.buildHeaders({ requiresAuth: true })
+        const response = await fetch(url, {
+          method: "PUT",
+          headers,
+          body: JSON.stringify(data),
+          credentials: "include",
+        })
+        return await api.handleResponse<any>(response)
+      } catch (error) {
+        // Don't call api.handleError to avoid automatic toast
+        console.error("Gig update error:", error)
+        throw error
+      }
+    },
     delete: (id: string) => api.delete<{ message: string }>(`/gigs/${id}`),
-  },
-
-  // Order endpoints
-  orders: {
-    create: (data: any) => api.post<any>("/orders", { body: data }),
-
-    getBuyerOrders: (params?: any) => api.get<{ orders: any[]; pagination: any }>("/orders/buying", { params }),
-
-    getSellerOrders: (params?: any) => api.get<{ orders: any[]; pagination: any }>("/orders/selling", { params }),
-
-    getById: (id: string) => api.get<any>(`/orders/${id}`),
-
-    updateStatus: (id: string, status: string) => api.put<any>(`/orders/${id}/status`, { body: { status } }),
-
-    deliver: (id: string, data: any) => api.post<any>(`/orders/${id}/deliver`, { body: data }),
   },
 
   // Message endpoints
   messages: {
-    getConversations: () => api.get<{ conversations: any[] }>("/conversations"),
+    getConversations: () => api.get<any[]>("/conversations"),
 
     getMessages: (conversationId: string, params?: any) =>
-      api.get<{ messages: any[]; pagination: any }>(`/conversations/${conversationId}/messages`, { params }),
+      api.get<any[]>(`/conversations/${conversationId}/messages`, { params }),
 
-    sendMessage: (conversationId: string, text: string) =>
-      api.post<any>(`/conversations/${conversationId}/messages`, { body: { text } }),
-  },
+    sendMessage: (data: { conversationId: string; text: string }) =>
+      api.post<any>(`/conversations/${data.conversationId}/messages`, { body: { text: data.text } }),
 
-  // Review endpoints
-  reviews: {
-    create: (gigId: string, data: any) => api.post<any>(`/gigs/${gigId}/reviews`, { body: data }),
+    markAsRead: (conversationId: string) =>
+      api.put<any>(`/conversations/${conversationId}/read`, {}),
 
-    getByGigId: (gigId: string, params?: any) =>
-      api.get<{ reviews: any[]; pagination: any; summary: any }>(`/gigs/${gigId}/reviews`, { params }),
+    createConversation: (userId: string) =>
+      api.post<any>("/conversations", { body: { userId } }),
   },
 
   // Search endpoints

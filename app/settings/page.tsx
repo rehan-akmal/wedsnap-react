@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/hooks/use-auth"
 import { Camera, Save, Lock, Bell, Calendar, User } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
-import { apiService } from "@/lib/api"
+import { apiService, getActiveStorageUrl } from "@/lib/api"
 
 // Pakistan cities for location selection
 const pakistanCities = [
@@ -77,7 +77,7 @@ export default function SettingsPage() {
         setBio(data.bio || "")
         setLocation(data.location || "")
         setPhone(data.phone || "")
-        setProfileImage(data.profileImage || "/placeholder.svg?height=100&width=100")
+        setProfileImage(data.avatar_url || "/placeholder.svg?height=100&width=100")
         setEmail(data.email || "")
 
         // Set notification settings
@@ -109,9 +109,7 @@ export default function SettingsPage() {
 
   // Handle profile image upload
   const handleImageUpload = async () => {
-    // In a real app, this would handle file upload
     try {
-      // Mock file upload
       const fileInput = document.createElement("input")
       fileInput.type = "file"
       fileInput.accept = "image/*"
@@ -162,10 +160,12 @@ export default function SettingsPage() {
 
     try {
       const profileData = {
-        name,
-        bio,
-        location,
-        phone,
+        user: {
+          name,
+          bio,
+          location,
+          phone,
+        }
       }
 
       await apiService.user.updateProfile(profileData)
@@ -298,6 +298,43 @@ export default function SettingsPage() {
     }
   }
 
+  // Handle email update
+  const handleEmailUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    // Validation
+    if (!email) {
+      toast({
+        title: "Email is required",
+        description: "Please enter your email address.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      const emailData = {
+        user: {
+          email,
+        }
+      }
+
+      await apiService.user.updateProfile(emailData)
+
+      toast({
+        title: "Email updated",
+        description: "Your email address has been updated successfully.",
+      })
+    } catch (error) {
+      console.error("Error updating email:", error)
+      toast({
+        title: "Update failed",
+        description: "Failed to update your email. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
   // Toggle available day
   const toggleAvailableDay = (day: string) => {
     setAvailableDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]))
@@ -336,10 +373,6 @@ export default function SettingsPage() {
             <Bell className="h-4 w-4" />
             Notifications
           </TabsTrigger>
-          <TabsTrigger value="availability" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Availability
-          </TabsTrigger>
         </TabsList>
 
         {/* Profile Settings */}
@@ -355,13 +388,13 @@ export default function SettingsPage() {
                   <div className="flex flex-col items-center">
                     <div className="relative mb-4">
                       <Avatar className="h-24 w-24">
-                        <AvatarImage src={profileImage || "/placeholder.svg"} alt="Profile" />
-                        <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+                        <AvatarImage src={getActiveStorageUrl(profileImage) || "/placeholder.svg"} alt={name} />
+                        <AvatarFallback>{name.slice(0, 2).toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <Button
                         type="button"
                         size="icon"
-                        className="absolute bottom-0 right-0 rounded-full bg-purple-600 hover:bg-purple-700 h-8 w-8"
+                        className="absolute bottom-0 right-0 rounded-full bg-red-600 hover:bg-red-700 h-8 w-8"
                         onClick={handleImageUpload}
                       >
                         <Camera className="h-4 w-4" />
@@ -425,7 +458,7 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="flex justify-end">
-                  <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
+                  <Button type="submit" className="bg-red-600 hover:bg-red-700">
                     <Save className="h-4 w-4 mr-2" />
                     Save Changes
                   </Button>
@@ -444,14 +477,14 @@ export default function SettingsPage() {
                 <CardDescription>Update your email address</CardDescription>
               </CardHeader>
               <CardContent>
-                <form className="space-y-4">
+                <form onSubmit={handleEmailUpdate} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
                   </div>
 
                   <div className="flex justify-end">
-                    <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
+                    <Button type="submit" className="bg-red-600 hover:bg-red-700">
                       Update Email
                     </Button>
                   </div>
@@ -497,7 +530,7 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="flex justify-end">
-                    <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
+                    <Button type="submit" className="bg-red-600 hover:bg-red-700">
                       Update Password
                     </Button>
                   </div>
@@ -587,7 +620,7 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="flex justify-end">
-                  <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
+                  <Button type="submit" className="bg-red-600 hover:bg-red-700">
                     Save Preferences
                   </Button>
                 </div>
@@ -600,48 +633,55 @@ export default function SettingsPage() {
         <TabsContent value="availability">
           <Card>
             <CardHeader>
-              <CardTitle>Availability Settings</CardTitle>
-              <CardDescription>Set your working days and hours for bookings</CardDescription>
+              <CardTitle>Availability</CardTitle>
+              <CardDescription>Manage your availability for selling products</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleAvailabilitySubmit} className="space-y-6">
                 <div className="space-y-4">
-                  <h3 className="font-medium">Available Days</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
-                      <div key={day} className="flex items-center space-x-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium">Available Days</h3>
+                      <p className="text-sm text-gray-500">Select the days you are available to sell</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map((day) => (
                         <Checkbox
-                          id={`day-${day}`}
+                          key={day}
                           checked={availableDays.includes(day)}
                           onCheckedChange={() => toggleAvailableDay(day)}
                         />
-                        <Label htmlFor={`day-${day}`} className="cursor-pointer">
-                          {day}
-                        </Label>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="start-time">Start Time</Label>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium">Start Time</h3>
+                      <p className="text-sm text-gray-500">Select the start time of your availability</p>
+                    </div>
                     <Input
-                      id="start-time"
                       type="time"
                       value={startTime}
                       onChange={(e) => setStartTime(e.target.value)}
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="end-time">End Time</Label>
-                    <Input id="end-time" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium">End Time</h3>
+                      <p className="text-sm text-gray-500">Select the end time of your availability</p>
+                    </div>
+                    <Input
+                      type="time"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                    />
                   </div>
                 </div>
 
                 <div className="flex justify-end">
-                  <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
+                  <Button type="submit" className="bg-red-600 hover:bg-red-700">
                     Save Availability
                   </Button>
                 </div>

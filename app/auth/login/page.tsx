@@ -64,7 +64,7 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link href="/auth/forgot-password" className="text-sm text-purple-600 hover:text-purple-800">
+                <Link href="/auth/forgot-password" className="text-sm text-red-600 hover:text-red-800">
                   Forgot password?
                 </Link>
               </div>
@@ -76,7 +76,7 @@ export default function LoginPage() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700" disabled={isLoading}>
+            <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign in"}
             </Button>
           </form>
@@ -84,7 +84,7 @@ export default function LoginPage() {
         <CardFooter className="flex flex-col">
           <div className="text-center text-sm mt-2">
             Don&apos;t have an account?{" "}
-            <Link href="/auth/signup" className="text-purple-600 hover:text-purple-800 font-medium">
+            <Link href="/auth/signup" className="text-red-600 hover:text-red-800 font-medium">
               Sign up
             </Link>
           </div>
