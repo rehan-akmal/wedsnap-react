@@ -61,13 +61,41 @@ export default function GigsPage() {
         setLoading(true)
 
         // Fetch all gigs
-        const response = await apiService.gigs.getAll() as ApiResponse
-        setAllGigs(response.gigs)
-        setFilteredGigs(response.gigs)
+        const response = await apiService.gigs.getAll()
+        console.log('API Response:', response)
+        
+        // Handle both possible response structures
+        let gigsData: Gig[]
+        if (Array.isArray(response)) {
+          // Backend returns gigs directly as array
+          gigsData = response
+        } else if (response && response.gigs && Array.isArray(response.gigs)) {
+          // Backend returns wrapped in gigs property
+          gigsData = response.gigs
+        } else {
+          console.error('Unexpected API response structure:', response)
+          gigsData = []
+        }
+        
+        console.log('Gigs data:', gigsData)
+        
+        setAllGigs(gigsData)
+        setFilteredGigs(gigsData)
 
         // Extract unique cities from gigs
-        const uniqueCities = [...new Set(response.gigs?.map((gig: Gig) => gig?.location))]
-        setCities(uniqueCities)
+        const pakistanCities = [
+          "Lahore",
+          "Karachi",
+          "Islamabad",
+          "Rawalpindi",
+          "Faisalabad",
+          "Multan",
+          "Peshawar",
+          "Quetta",
+          "Sialkot",
+          "Gujranwala",
+        ]
+        setCities(pakistanCities)
 
         // Extract unique categories (if needed)
         // const uniqueCategories = [...new Set(gigsData.flatMap(gig => gig.categories || []))]
@@ -86,6 +114,14 @@ export default function GigsPage() {
   useEffect(() => {
     if (allGigs?.length === 0) return
 
+    console.log('Filtering gigs:', {
+      allGigsCount: allGigs?.length,
+      searchQuery,
+      cityFilter,
+      priceRange,
+      allGigs: allGigs
+    })
+
     const filtered = allGigs?.filter((gig) => {
       // Search query filter
       const matchesSearch =
@@ -95,8 +131,9 @@ export default function GigsPage() {
       // City filter
       const matchesCity = !cityFilter || gig.location === cityFilter
 
-      // Price range filter
-      const matchesPrice = !priceRange || (
+      // Price range filter - only apply if price range is not the default
+      const isDefaultPriceRange = priceRange[0] === 0 && priceRange[1] === 100000
+      const matchesPrice = isDefaultPriceRange || (
         gig.packages && 
         gig.packages.some(pkg => {
           const price = Number(pkg.price)
@@ -104,9 +141,18 @@ export default function GigsPage() {
         })
       )
 
+      console.log(`Gig ${gig.id}:`, {
+        title: gig.title,
+        matchesSearch,
+        matchesCity,
+        matchesPrice,
+        packages: gig.packages
+      })
+
       return matchesSearch && matchesCity && matchesPrice
     })
 
+    console.log('Filtered gigs:', filtered)
     setFilteredGigs(filtered)
   }, [searchQuery, cityFilter, priceRange, allGigs])
 
